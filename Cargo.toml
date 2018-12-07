@@ -1,0 +1,13 @@
+[package]
+
+name = "timely-programs"
+version = "0.0.0"
+authors = ["Lorenzo Martini <lmartini@student.ethz.ch>"]
+readme = "README.md"
+
+description = "A set of programs to measure timely performance"
+
+[dependencies]
+timely = { git = "https://github.com/frankmcsherry/timely-dataflow" }
+timely-affinity = { git = "https://github.com/utaal/timely-affinity" }
+streaming-harness-hdrhist = { git = "https://github.com/utaal/hdrhist-rust" }
