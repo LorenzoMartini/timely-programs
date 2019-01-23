@@ -19,9 +19,6 @@ fn main() {
     opts.optopt("p", "process_id", "", "");
     opts.optopt("h", "hostfile", "", "");
     opts.optflag("s", "serialize", "use the zero_copy serialising allocator");
-    for el in std::env::args().skip(3) {
-        print("{}", el);
-    }
 
     if let Ok(matches) = opts.parse(std::env::args().skip(3)) {
 
