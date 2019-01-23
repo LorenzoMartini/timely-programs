@@ -59,7 +59,7 @@ fn main() {
         });
         }
         
-        ::timely::execute::execute_from_args(std::env::args().skip(2), worker_closure!()).unwrap();
+        ::timely::execute_from_args(std::env::args().skip(2), worker_closure!()).unwrap();
     } else {
         println!("error parsing arguments");
         println!("usage:\tbarrier <iterations> (worker|process) [timely options]");
