@@ -54,7 +54,7 @@ fn main() {
             });
         });
         }
-        
+
         if !serialize {
             ::timely_affinity::execute::execute_from_args(std::env::args().skip(2), worker_closure!()).unwrap();
         } else {

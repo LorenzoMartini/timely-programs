@@ -8,7 +8,8 @@ readme = "README.md"
 description = "A set of programs to measure timely performance"
 
 [dependencies]
-timely = {  git = "https://github.com/frankmcsherry/timely-dataflow"  }
-timely-affinity = { git = "https://github.com/LorenzoMartini/timely-affinity", branch = "lmartini/execute_from" }
+timely = {  git = "https://github.com/frankmcsherry/timely-dataflow", rev = "75fe42ad3d566de3a32af6dff2ca042fd9e45f61" }
+timely-affinity = { git = "https://github.com/LorenzoMartini/timely-affinity", branch = "lmartini/december_timely" }
 streaming-harness-hdrhist = { git = "https://github.com/utaal/hdrhist-rust" }
 getopts="*"
+
