@@ -14,6 +14,9 @@ fn main() {
     // currently need timely's full option set to parse args
     let mut opts = getopts::Options::new();
     opts.optopt("w", "workers", "", "");
+    opts.optopt("n", "processes", "", "");
+    opts.optopt("p", "process_id", "", "");
+    opts.optopt("h", "hostfile", "", "");
     opts.optflag("s", "serialize", "use the zero_copy serialising allocator");
     if let Ok(matches) = opts.parse(std::env::args().skip(2)) {
         let workers: usize = matches.opt_str("w").map(|x| x.parse().unwrap_or(1)).unwrap_or(1);

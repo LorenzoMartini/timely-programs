@@ -15,7 +15,13 @@ fn main() {
 
     let mut opts = getopts::Options::new();
     opts.optopt("w", "workers", "", "");
+    opts.optopt("n", "processes", "", "");
+    opts.optopt("p", "process_id", "", "");
+    opts.optopt("h", "hostfile", "", "");
     opts.optflag("s", "serialize", "use the zero_copy serialising allocator");
+    for el in std::env::args().skip(3) {
+        print("{}", el);
+    }
 
     if let Ok(matches) = opts.parse(std::env::args().skip(3)) {
 
@@ -143,6 +149,6 @@ fn main() {
         }
     } else {
             println!("error parsing arguments");
-            println!("usage:\tbarrier <iterations> (worker|process) [timely options]");
+            println!("usage:\topenloop <rate> <duration> (worker|process) [timely options]");
         }
 }
