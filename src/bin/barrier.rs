@@ -1,7 +1,7 @@
 extern crate timely;
 extern crate streaming_harness_hdrhist;
-extern crate core_affinity;
 extern crate getopts;
+extern crate timely_affinity;
 
 use std::time::Instant;
 use timely::dataflow::channels::pact::Pipeline;
@@ -18,12 +18,11 @@ fn main() {
     opts.optopt("p", "process_id", "", "");
     opts.optopt("h", "hostfile", "", "");
     opts.optflag("s", "serialize", "use the zero_copy serialising allocator");
-    if let Ok(_matches) = opts.parse(std::env::args().skip(2)) {
+    if let Ok(matches) = opts.parse(std::env::args().skip(2)) {
+        let workers: usize = matches.opt_str("w").map(|x| x.parse().unwrap_or(1)).unwrap_or(1);
+        let serialize: bool = matches.opt_present("s");
         macro_rules! worker_closure { () => (move |worker| {
             let index = worker.index();
-            // Pin core
-            let core_ids = core_affinity::get_core_ids().unwrap();
-            core_affinity::set_for_current(core_ids[index % core_ids.len()]);
 
             worker.dataflow(move |scope| {
                 let (handle, stream) = scope.feedback::<usize>(1);
@@ -58,8 +57,15 @@ fn main() {
             });
         });
         }
-        
-        timely::execute_from_args(std::env::args().skip(2), worker_closure!()).unwrap();
+        if !serialize {
+            ::timely_affinity::execute::execute_from_args(std::env::args().skip(2), worker_closure!()).unwrap();
+        } else {
+            eprintln!("NOTE: thread allocators zerocopy, this ignores -p and -n");
+            let allocators =
+                ::timely::communication::allocator::zero_copy::allocator_process::ProcessBuilder::new_vector(workers);
+            ::timely_affinity::execute::execute_from(
+                std::env::args().skip(2).filter(|arg| arg != "-s"), allocators, Box::new(()), worker_closure!()).unwrap();
+        }
     } else {
         println!("error parsing arguments");
         println!("usage:\tbarrier <iterations> (worker|process) [timely options]");
