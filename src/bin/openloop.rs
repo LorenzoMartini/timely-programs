@@ -1,5 +1,6 @@
 extern crate timely;
 extern crate timely_affinity;
+extern crate streaming_harness_hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
 use timely::dataflow::operators::{Input, Filter, Probe};
@@ -115,25 +116,28 @@ fn main() {
 
             // Report observed latency measurements.
             if index == 0 {
-
-                let mut results = Vec::new();
+                let mut hist = streaming_harness_hdrhist::HDRHist::new();
                 let total = counts.iter().map(|x| x.iter().sum::<u64>()).sum();
                 let mut sum = 0;
+                let mut added = 0;
                 for index in (10 .. counts.len()).rev() {
                     for sub in (0 .. 16).rev() {
                         if sum > 0 && sum < total {
                             let latency = (1 << (index-1)) + (sub << (index-5));
-                            let fraction = (sum as f64) / (total as f64);
-                            results.push((latency, fraction));
+                            hist.add_value(latency as u64);
+                            added += 1;
                         }
                         sum += counts[index][sub];
                     }
                 }
-                for (latency, fraction) in results.drain(..).rev() {
-                    println!("{}\t{}", latency, fraction);
-                }
-            }
 
+                println!("-------------\nSummary:\n{}", hist.summary_string());
+                println!("-------------\nCDF:");
+                for entry in hist.ccdf() {
+                    println!("{:?}", entry);
+                }
+                println!("Insert {} values", added);
+            }
         });
         }
         if !serialize {
