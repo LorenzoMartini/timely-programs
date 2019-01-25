@@ -130,7 +130,7 @@ fn main() {
                 }
 
                 for (latency, fraction) in results.drain(..).rev() {
-                    println!("({},\t{},1)", latency, fraction);
+                    println!("({}, {}, 1)", latency, fraction);
                 }
             }
         });
