@@ -3,7 +3,7 @@ extern crate timely_affinity;
 extern crate streaming_harness_hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
-use timely::dataflow::operators::{Input, Filter, Probe};
+use timely::dataflow::operators::{Input, Probe, Exchange};
 
 fn main() {
     // currently need timely's full option set to parse args
@@ -28,7 +28,6 @@ fn main() {
         macro_rules! worker_closure { () => (move |worker| {
 
             let index = worker.index();
-            let peers = worker.peers();
 
             // re-synchronize all workers (account for start-up).
             timely::synchronization::Barrier::new(worker).wait();
@@ -42,7 +41,7 @@ fn main() {
             worker.dataflow(|scope| {
                 scope
                     .input_from(&mut input)     // read input.
-                    .filter(|_| false)          // do nothing.
+                    .exchange(move |x| *x as u64)
                     .probe_with(&mut probe);    // observe output.
             });
 
@@ -59,58 +58,62 @@ fn main() {
 
             let mut hist = streaming_harness_hdrhist::HDRHist::new();
 
-            while retire_counter < counter_limit {
+            if index == 0 {
+                while retire_counter < counter_limit {
 
-                // Open-loop latency-throughput test, parameterized by offered rate `ns_per_request`.
-                let elapsed = timer.elapsed();
-                let elapsed_ns = elapsed.as_secs() * 1_000_000_000 + (elapsed.subsec_nanos() as u64);
+                    // Open-loop latency-throughput test, parameterized by offered rate `ns_per_request`.
+                    let elapsed = timer.elapsed();
+                    let elapsed_ns = elapsed.as_secs() * 1_000_000_000 + (elapsed.subsec_nanos() as u64);
 
-                // Determine completed ns.
-                let acknowledged_ns: u64 = probe.with_frontier(|frontier| frontier[0]);
+                    // Determine completed ns.
+                    let acknowledged_ns: u64 = probe.with_frontier(|frontier| frontier[0]);
 
-                // Notice any newly-retired records.
-                while ((retire_counter * ns_per_request) as u64) < acknowledged_ns && retire_counter < counter_limit {
-                    let requested_at = (retire_counter * ns_per_request) as u64;
-                    let latency_ns = elapsed_ns - requested_at;
+                    // Notice any newly-retired records.
+                    while ((retire_counter * ns_per_request) as u64) < acknowledged_ns && retire_counter < counter_limit {
+                        let requested_at = (retire_counter * ns_per_request) as u64;
+                        let latency_ns = elapsed_ns - requested_at;
 
-                    hist.add_value(latency_ns);
+                        hist.add_value(latency_ns);
 
-                    retire_counter += peers;
-                }
-
-                // Now, should we introduce more records before stepping the worker?
-                // Three choices here:
-                //
-                //   1. Wait until previous batch acknowledged.
-                //   2. Tick at most once every millisecond-ish.
-                //   3. Geometrically increase outstanding batches.
-
-                // Technique 1:
-                // let target_ns = if acknowledged_ns >= inserted_ns { elapsed_ns } else { inserted_ns };
-
-                // Technique 2:
-                // let target_ns = elapsed_ns & !((1 << 20) - 1);
-
-                // Technique 3:
-                let target_ns = {
-                    let delta: u64 = inserted_ns - acknowledged_ns;
-                    let bits = ::std::mem::size_of::<u64>() * 8 - delta.leading_zeros() as usize;
-                    let scale = ::std::cmp::max((1 << bits) / 4, 1024);
-                    elapsed_ns & !(scale - 1)
-                };
-
-                // Common for each technique.
-                if inserted_ns < target_ns {
-
-                    while ((insert_counter * ns_per_request) as u64) < target_ns {
-                        input.send(insert_counter);
-                        insert_counter += peers;
+                        retire_counter += 1;
                     }
-                    input.advance_to(target_ns);
-                    inserted_ns = target_ns;
-                }
 
-                worker.step();
+                    // Now, should we introduce more records before stepping the worker?
+                    // Three choices here:
+                    //
+                    //   1. Wait until previous batch acknowledged.
+                    //   2. Tick at most once every millisecond-ish.
+                    //   3. Geometrically increase outstanding batches.
+
+                    // Technique 1:
+                    // let target_ns = if acknowledged_ns >= inserted_ns { elapsed_ns } else { inserted_ns };
+
+                    // Technique 2:
+                    // let target_ns = elapsed_ns & !((1 << 20) - 1);
+
+                    // Technique 3:
+                    let target_ns = {
+                        let delta: u64 = inserted_ns - acknowledged_ns;
+                        let bits = ::std::mem::size_of::<u64>() * 8 - delta.leading_zeros() as usize;
+                        let scale = ::std::cmp::max((1 << bits) / 4, 1024);
+                        elapsed_ns & !(scale - 1)
+                    };
+
+                    // Common for each technique.
+                    if inserted_ns < target_ns {
+
+                        while ((insert_counter * ns_per_request) as u64) < target_ns {
+                            input.send(insert_counter);
+                            insert_counter += 1;
+                        }
+                        input.advance_to(target_ns);
+                        inserted_ns = target_ns;
+                    }
+
+                    worker.step();
+                }
+            } else {
+                input.close();
             }
 
             // Report observed latency measurements.
@@ -132,7 +135,7 @@ fn main() {
             ::timely_affinity::execute::execute_from(std::env::args().skip(3).filter(|arg| arg != "-s"), allocators, Box::new(()), worker_closure!()).unwrap();
         }
     } else {
-            println!("error parsing arguments");
-            println!("usage:\topenloop <rate> <duration> (worker|process) [timely options]");
-        }
+        println!("error parsing arguments");
+        println!("usage:\topenloop <rate> <duration> (worker|process) [timely options]");
+    }
 }
