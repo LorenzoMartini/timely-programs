@@ -1,5 +1,6 @@
 extern crate timely;
 extern crate timely_affinity;
+extern crate streaming_harness_hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
 use timely::dataflow::operators::{Input, Filter, Probe};
@@ -54,9 +55,10 @@ fn main() {
             // We repeatedly consult the elapsed time, and introduce any data now considered available.
             // At the same time, we observe the output and record which inputs are considered retired.
 
-            let mut counts = vec![[0u64; 16]; 64];
-
             let counter_limit = rate * duration_s;
+
+            let mut hist = streaming_harness_hdrhist::HDRHist::new();
+
             while retire_counter < counter_limit {
 
                 // Open-loop latency-throughput test, parameterized by offered rate `ns_per_request`.
@@ -71,9 +73,7 @@ fn main() {
                     let requested_at = (retire_counter * ns_per_request) as u64;
                     let latency_ns = elapsed_ns - requested_at;
 
-                    let count_index = latency_ns.next_power_of_two().trailing_zeros() as usize;
-                    let low_bits = ((elapsed_ns - requested_at) >> (count_index - 5)) & 0xF;
-                    counts[count_index][low_bits as usize] += 1;
+                    hist.add_value(latency_ns);
 
                     retire_counter += peers;
                 }
@@ -115,22 +115,10 @@ fn main() {
 
             // Report observed latency measurements.
             if index == 0 {
-                let mut results = Vec::new();
-                let total = counts.iter().map(|x| x.iter().sum::<u64>()).sum();
-                let mut sum = 0;
-                for index in (10 .. counts.len()).rev() {
-                    for sub in (0 .. 16).rev() {
-                        if sum > 0 && sum < total {
-                            let latency = (1 << (index-1)) + (sub << (index-5));
-                            let fraction = (sum as f64) / (total as f64);
-                            results.push((latency, fraction));
-                        }
-                        sum += counts[index][sub];
-                    }
-                }
-
-                for (latency, fraction) in results.drain(..).rev() {
-                    println!("({}, {}, 1)", latency, fraction);
+                println!("-------------\nSummary:\n{}", hist.summary_string());
+                println!("-------------\nCDF:");
+                for entry in hist.ccdf() {
+                    println!("{:?}", entry);
                 }
             }
         });
