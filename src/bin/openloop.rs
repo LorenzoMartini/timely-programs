@@ -4,6 +4,7 @@ extern crate streaming_harness_hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
 use timely::dataflow::operators::{Input, Probe, Exchange};
+use timely::logging::TimelyEvent;
 
 fn main() {
     // currently need timely's full option set to parse args
@@ -36,6 +37,11 @@ fn main() {
 
             let mut input = InputHandle::new();
             let mut probe = ProbeHandle::new();
+
+            worker.log_register().insert::<TimelyEvent,_>("timely", |_time, data| {
+                data.iter().for_each(|x| println!("LOG: {:?}", x));
+            });
+
 
             // Create a dataflow that discards input data (just syncronizes).
             worker.dataflow(|scope| {
