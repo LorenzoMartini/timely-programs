@@ -4,7 +4,6 @@ extern crate streaming_harness_hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
 use timely::dataflow::operators::{Input, Probe, Exchange};
-use timely::logging::TimelyEvent;
 
 fn main() {
     // currently need timely's full option set to parse args
