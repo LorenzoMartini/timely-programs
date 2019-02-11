@@ -38,11 +38,6 @@ fn main() {
             let mut input = InputHandle::new();
             let mut probe = ProbeHandle::new();
 
-            worker.log_register().insert::<TimelyEvent,_>("timely", |_time, data| {
-                data.iter().for_each(|x| println!("LOG: {:?}", x));
-            });
-
-
             // Create a dataflow that discards input data (just syncronizes).
             worker.dataflow(|scope| {
                 scope
