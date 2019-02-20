@@ -1,5 +1,5 @@
 extern crate timely;
-extern crate streaming_harness_hdrhist;
+extern crate hdrhist;
 extern crate getopts;
 extern crate timely_affinity;
 
@@ -26,7 +26,7 @@ fn main() {
 
             worker.dataflow(move |scope| {
                 let (handle, stream) = scope.feedback::<usize>(1);
-                let mut hist = streaming_harness_hdrhist::HDRHist::new();
+                let mut hist = hdrhist::HDRHist::new();
                 let mut t0 = Instant::now();
                 stream.unary_notify(
                     Pipeline,
