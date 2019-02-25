@@ -1,5 +1,5 @@
 extern crate timely;
-extern crate streaming_harness_hdrhist;
+extern crate hdrhist;
 extern crate timely_affinity;
 
 use std::time::Instant;
@@ -17,7 +17,7 @@ fn main() {
 
         let _index = worker.index();
 
-        let hist1 = Rc::new(RefCell::new((streaming_harness_hdrhist::HDRHist::new(), Vec::with_capacity(iterations + 2))));
+        let hist1 = Rc::new(RefCell::new((hdrhist::HDRHist::new(), Vec::with_capacity(iterations + 2))));
         let hist2 = hist1.clone();
 
         worker.dataflow(move |scope| {

@@ -10,5 +10,5 @@ description = "A set of programs to measure timely performance"
 [dependencies]
 timely = {  git = "https://github.com/LorenzoMartini/timely-dataflow", branch = "lmartini/selective_logging" }
 timely-affinity = { git = "https://github.com/LorenzoMartini/timely-affinity", branch = "lmartini/selective_logging" }
-streaming-harness-hdrhist = { git = "https://github.com/utaal/hdrhist-rust" }
+hdrhist = "^0.5"
 getopts="*"
