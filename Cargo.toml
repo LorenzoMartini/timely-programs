@@ -8,7 +8,7 @@ readme = "README.md"
 description = "A set of programs to measure timely performance"
 
 [dependencies]
-timely = {  git = "https://github.com/LorenzoMartini/timely-dataflow", branch = "lmartini/modelling" }
-timely-affinity = { git = "https://github.com/LorenzoMartini/timely-affinity", branch = "lmartini/modelling" }
+timely = {  git = "https://github.com/LorenzoMartini/timely-dataflow", branch = "lmartini/npnc_spsc" }
+timely-affinity = { git = "https://github.com/LorenzoMartini/timely-affinity", branch = "lmartini/npnc_spsc" }
 hdrhist = "^0.5.0"
 getopts="*"
