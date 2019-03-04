@@ -45,7 +45,7 @@ fn main() {
                                 if index == 0 {
                                     println!("-------------\nSummary:\n{}", hist.summary_string());
                                     println!("-------------\nCDF:");
-                                    for entry in hist.ccdf() {
+                                    for entry in hist.ccdf_upper_bound() {
                                         println!("{:?}", entry);
                                     }
                                 }
