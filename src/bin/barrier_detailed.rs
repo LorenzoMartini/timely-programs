@@ -1,5 +1,5 @@
 extern crate timely;
-extern crate streaming_harness_hdrhist;
+extern crate hdrhist;
 extern crate timely_affinity;
 
 use std::time::Instant;
@@ -17,7 +17,7 @@ fn main() {
 
         let _index = worker.index();
 
-        let hist1 = Rc::new(RefCell::new((streaming_harness_hdrhist::HDRHist::new(), Vec::with_capacity(iterations + 2))));
+        let hist1 = Rc::new(RefCell::new((hdrhist::HDRHist::new(), Vec::with_capacity(iterations + 2))));
         let hist2 = hist1.clone();
 
         worker.dataflow(move |scope| {
@@ -51,7 +51,7 @@ fn main() {
 
         while worker.step() {}
 
-        let hist = ::std::rc::Rc::try_unwrap(hist2).expect("Non unique owner");
+        let hist = ::std::rc::Rc::try_unwrap(hist2).unwrap_or_else(|_err| panic!("Non unique owner"));
         hist.into_inner()
     }).unwrap().join(); // asserts error-free execution;
 
@@ -60,7 +60,7 @@ fn main() {
     println!("-------------");
     println!("Worker 0");
     println!("Summary:\n{}", hists[0].as_ref().unwrap().0.summary_string());
-    for entry in hists[0].as_ref().unwrap().0.ccdf() {
+    for entry in hists[0].as_ref().unwrap().0.ccdf_upper_bound() {
         println!("{:?}", entry);
     }
 
@@ -73,7 +73,7 @@ fn main() {
     let head_hist = hist_iter.next().unwrap();
     let hist = hist_iter.into_iter().fold(head_hist, |acc, x| acc.combined(x));
     println!("Summary:\n{}", hist.summary_string());
-    for entry in hist.ccdf() {
+    for entry in hist.ccdf_upper_bound() {
         println!("{:?}", entry);
     }
 

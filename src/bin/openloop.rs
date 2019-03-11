@@ -1,6 +1,6 @@
 extern crate timely;
 extern crate timely_affinity;
-extern crate streaming_harness_hdrhist;
+extern crate hdrhist;
 
 use timely::dataflow::{InputHandle, ProbeHandle};
 use timely::dataflow::operators::{Input, Probe, Exchange};
@@ -56,7 +56,7 @@ fn main() {
 
             let counter_limit = rate * duration_s;
 
-            let mut hist = streaming_harness_hdrhist::HDRHist::new();
+            let mut hist = hdrhist::HDRHist::new();
 
             if index == 0 {
                 while retire_counter < counter_limit {
@@ -120,7 +120,7 @@ fn main() {
             if index == 0 {
                 println!("-------------\nSummary:\n{}", hist.summary_string());
                 println!("-------------\nCDF:");
-                for entry in hist.ccdf() {
+                for entry in hist.ccdf_upper_bound() {
                     println!("{:?}", entry);
                 }
             }
