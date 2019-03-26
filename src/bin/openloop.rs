@@ -102,14 +102,15 @@ fn main() {
                     // Common for each technique.
                     if inserted_ns < target_ns {
 
-                        while ((insert_counter * ns_per_request) as u64) < target_ns {
-                            input.send(insert_counter);
-                            insert_counter += 1;
+                        if ((insert_counter * ns_per_request) as u64) < target_ns {
+                            while ((insert_counter * ns_per_request) as u64) < target_ns {
+                                input.send(insert_counter);
+                                insert_counter += 1;
+                            }
+                            input.advance_to(target_ns);
+                            inserted_ns = target_ns;
                         }
-                        input.advance_to(target_ns);
-                        inserted_ns = target_ns;
                     }
-
                     worker.step();
                 }
             } else {
